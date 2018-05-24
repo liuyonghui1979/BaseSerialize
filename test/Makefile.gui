@@ -1,0 +1,69 @@
+###############################################################################
+# GUI编译模版
+###############################################################################
+# 定义用于可移植的文件操作命令串，无须修改
+UIC 	:= uic
+MOC   := moc
+RCC   := rcc
+ECHO 	:= echo
+
+os := $(shell uname -s)
+ifeq (Linux,$(os))
+FIND := find 
+RM := rm -f
+GREP := grep
+else
+FIND := C:\MinGW\msys\1.0\bin\find 
+RM := C:\MinGW\msys\1.0\bin\rm -f
+GREP := C:\MinGW\msys\1.0\bin\grep
+#RM := del	/q
+endif
+###############################################################################
+# Section 1. 工程配置段
+# 为了完成对工程的正确编译，我们需要修改本段中多数选项
+###############################################################################
+
+#==============================================================================
+# GUI_DIR 	: GUI文件所在目录
+# OUT_DIR  	: 编译GUI文件的输出目录
+# GUI_FILES	: 全部GUI文件名称
+#==============================================================================
+
+GUI_FILES := $(shell $(FIND) ./ -name "*.ui")
+# 定义模块编译时的目标文件列表
+GUI_HPPS := $(GUI_FILES:./%.ui=./ui_%.h)	
+
+MOC_FILES := $(shell $(GREP) -l "Q_OBJECT" ./*.h)
+MOC_CPPS := $(MOC_FILES:./%.h=./moc_%.cpp)	
+
+QRC_FILES := $(shell $(FIND) ./ -maxdepth 1 -name "*.qrc")
+QRC_CPPS := $(QRC_FILES:./%.qrc=./qrc_%.cpp)
+#==============================================================================
+# Section 2. 编译
+#==============================================================================
+# 定义编译tagert
+all:$(GUI_HPPS) $(MOC_CPPS) $(QRC_CPPS) 
+./ui_%.h:./%.ui
+	@$(ECHO) 'Building file    : $<' 
+	$(UIC) $< -o $@	
+	@$(ECHO) 'Finished building: $<'
+	@$(ECHO) ' '
+	
+./moc_%.cpp:./%.h
+	@$(ECHO) 'Building file    : $<'
+	$(MOC) $< -o $@	
+	@$(ECHO) 'Finished building: $<'
+	@$(ECHO) ' '
+	
+./qrc_%.cpp:./%.qrc
+	@$(ECHO) 'Building file    : $<'
+	$(RCC) $< -o $@	
+	@$(ECHO) 'Finished building: $<'
+	@$(ECHO) ' '
+		
+clean:
+	-$(RM) $(GUI_HPPS)
+	-$(RM) $(MOC_CPPS)
+	-$(RM) $(QRC_CPPS)
+					
+.PHONY: all clean
